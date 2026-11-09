@@ -6,3 +6,7 @@ target/
 *.log
 .DS_Store
 Thumbs.db
+
+# Office files with personal data and their temp lock files
+docs/Integrantes*.xlsx
+~$*

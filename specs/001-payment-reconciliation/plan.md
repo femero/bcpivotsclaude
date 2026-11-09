@@ -61,7 +61,7 @@ las particiones de cada topic, que fija el equipo.
 perder el evento (FR-015). Sin métricas, trazas ni dashboards. Sin autenticación. Ningún
 contrato se deriva del código.
 
-**Scale/Scope**: 1 aggregate root, 3 casos de uso, 5 puertos de salida, 4 mappers, 4 esquemas
+**Scale/Scope**: 1 aggregate root, 3 casos de uso, 6 puertos de salida, 5 mappers, 4 esquemas
 Avro, 1 endpoint REST, 1 tabla.
 
 ## Constitution Check
@@ -141,9 +141,10 @@ src/main/java/com/bancatest/reconciliation/
 │   │                                      # QueryReconciliationUseCase
 │   ├── port/out/                          # ReconciliationRepository, ProcessedOperationStore,
 │   │                                      # ReconciliationEventPublisher, ToleranceProvider,
-│   │                                      # ReconciliationIdProvider
+│   │                                      # ReconciliationIdProvider, TransactionalExecutor
 │   └── exception/                         # InvalidAmountException, CurrencyMismatchException,
-│                                          # IllegalStateTransitionException
+│                                          # IllegalStateTransitionException,
+│                                          # DuplicateOperationException
 ├── application/service/                   # ReconcilePaymentService,
 │                                          # RegisterCoreTransactionService,
 │                                          # QueryReconciliationService
@@ -216,18 +217,22 @@ serde de Confluent (R-06). *Propiedades pendientes de re-verificar (P-00).*
 **RegisterCoreTransactionService** (movimiento del core):
 
 1. Validar el comando igual que arriba. Inválido → DLQ del canal de movimientos.
-2. Buscar la conciliación por `OperationReference`. Vacío → descartar, log WARN (FR-021).
-3. **Comprobar `isResolved()` antes de transicionar.** Resuelta → descartar, log WARN, sin
-   invocar transición (FR-020).
-4. Calcular la diferencia (`paymentAmount − coreAmount`, FR-005) y compararla con la tolerancia.
-5. `match(...)` o `markAsMismatched(...)` sobre el agregado, registrando siempre la diferencia
-   (FR-009).
-6. Persistir y **confirmar la transacción**.
-7. Publicar el evento en el canal correspondiente, ya fuera de la transacción (FR-015).
+2. Dentro de `TransactionalExecutor.inTransaction(...)`:
+   1. Buscar la conciliación por `OperationReference`. Vacío → descartar, log WARN (FR-021).
+   2. **Comprobar `isResolved()` antes de transicionar.** Resuelta → descartar, log WARN, sin
+      invocar transición (FR-020).
+   3. Calcular la diferencia (`paymentAmount − coreAmount`, FR-005) y compararla con la
+      tolerancia.
+   4. `match(...)` o `markAsMismatched(...)`, registrando siempre la diferencia (FR-009).
+   5. Persistir. El bloque devuelve el agregado resuelto, o vacío si descartó.
+3. Con la transacción ya confirmada, publicar el evento en el canal correspondiente (FR-015).
+   Un fallo al publicar se registra y no se reintenta; el mensaje se confirma igualmente.
 
 `IllegalStateTransitionException` es una red de seguridad, no control de flujo: si se usara para
-detectar duplicados, cada reentrega acabaría en la DLQ. `resolveInTransaction()` debe quedar no
-privado y no final (R-13).
+detectar duplicados, cada reentrega acabaría en la DLQ. La frontera transaccional vive en el
+puerto `TransactionalExecutor`, implementado en `infrastructure`, porque `application` no puede
+importar `jakarta.*`. Por la misma razón los servicios son clases planas que `ApplicationBeans`
+(en `infrastructure/config`) expone como beans.
 
 ## Complexity Tracking
 

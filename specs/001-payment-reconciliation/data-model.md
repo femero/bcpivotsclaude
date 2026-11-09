@@ -215,7 +215,16 @@ interface ToleranceProvider
 
 interface ReconciliationIdProvider
     ReconciliationId nextId()
+
+interface TransactionalExecutor
+    <T> T inTransaction(Supplier<T> work)   // commits before returning
 ```
+
+`ReconciliationRepository.save` lanza `DuplicateOperationException` si la referencia ya existe
+(violación del `UNIQUE`). `TransactionalExecutor` existe porque `application` no puede importar
+`jakarta.transaction` (ImportControl, constitución V) y porque el orden "confirmar y después
+publicar" (FR-015) debe ser explícito. `OperationReference` admite como máximo 64 caracteres y
+`AccountNumber` 34, igual que el DDL.
 
 `ToleranceProvider` y `ReconciliationIdProvider` existen porque la capa `application` necesita
 la tolerancia (que vive en una interfaz `@ConfigMapping` de `infrastructure`) y una identidad

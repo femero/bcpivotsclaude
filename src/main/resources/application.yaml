@@ -27,47 +27,95 @@ avro:
     enableDecimalLogicalType: true
     stringType: String
 
+# IMPORTANT: in YAML a key containing dots is read as ONE quoted segment and the property is
+# silently NOT applied (e.g. "dead-letter-queue.topic" falls back to the framework default name).
+# Every dotted Kafka/Confluent property below is therefore written as nested keys.
 kafka:
-  bootstrap.servers: ${KAFKA_BOOTSTRAP_SERVERS}
-  security.protocol: SASL_SSL
-  sasl.mechanism: PLAIN
-  sasl.jaas.config: >-
-    org.apache.kafka.common.security.plain.PlainLoginModule required
-    username='${KAFKA_API_KEY}' password='${KAFKA_API_SECRET}';
-  schema.registry.url: ${SCHEMA_REGISTRY_URL}
-  basic.auth.credentials.source: USER_INFO
-  basic.auth.user.info: ${SCHEMA_REGISTRY_API_KEY}:${SCHEMA_REGISTRY_API_SECRET}
+  bootstrap:
+    servers: ${KAFKA_BOOTSTRAP_SERVERS}
+  security:
+    protocol: SASL_SSL
+  sasl:
+    mechanism: PLAIN
+    jaas:
+      config: >-
+        org.apache.kafka.common.security.plain.PlainLoginModule required
+        username='${KAFKA_API_KEY}' password='${KAFKA_API_SECRET}';
+
+# Local development only: the Docker Compose broker is PLAINTEXT. Other profiles keep SASL_SSL.
+"%dev":
+  kafka:
+    security:
+      protocol: PLAINTEXT
 
 mp:
   messaging:
+    # The Confluent serde reads these from the connector prefix, not from kafka.* or per channel.
+    connector:
+      smallrye-kafka:
+        schema:
+          registry:
+            url: ${SCHEMA_REGISTRY_URL}
+        basic:
+          auth:
+            credentials:
+              source: USER_INFO
+            user:
+              info: ${SCHEMA_REGISTRY_API_KEY}:${SCHEMA_REGISTRY_API_SECRET}
     incoming:
       payments-in:
         connector: smallrye-kafka
         topic: ${KAFKA_TOPIC_PAYMENTS_IN}
-        enable.auto.commit: false
+        enable:
+          auto:
+            commit: false
         failure-strategy: dead-letter-queue
-        dead-letter-queue.topic: ${KAFKA_TOPIC_PAYMENTS_DLQ}
-        partition.assignment.strategy: >-
-          org.apache.kafka.clients.consumer.CooperativeStickyAssignor
+        dead-letter-queue:
+          topic: ${KAFKA_TOPIC_PAYMENTS_DLQ}
+        partition:
+          assignment:
+            strategy: org.apache.kafka.clients.consumer.CooperativeStickyAssignor
       core-transactions-in:
         connector: smallrye-kafka
         topic: ${KAFKA_TOPIC_CORE_TRANSACTIONS_IN}
-        enable.auto.commit: false
+        enable:
+          auto:
+            commit: false
         failure-strategy: dead-letter-queue
-        dead-letter-queue.topic: ${KAFKA_TOPIC_CORE_TRANSACTIONS_DLQ}
-        partition.assignment.strategy: >-
-          org.apache.kafka.clients.consumer.CooperativeStickyAssignor
+        dead-letter-queue:
+          topic: ${KAFKA_TOPIC_CORE_TRANSACTIONS_DLQ}
+        partition:
+          assignment:
+            strategy: org.apache.kafka.clients.consumer.CooperativeStickyAssignor
     outgoing:
       results-out:
         connector: smallrye-kafka
         topic: ${KAFKA_TOPIC_RESULTS_OUT}
-        key.serializer: org.apache.kafka.common.serialization.StringSerializer
-        auto.register.schemas: false
+        key:
+          serializer: org.apache.kafka.common.serialization.StringSerializer
+        auto:
+          register:
+            schemas: false
+        # With auto-registration off the serializer would look up the exact schema of the generated
+        # class, which differs from the registered .avsc (e.g. avro.java.string) and returns 404
+        # (error 40403). Use the latest registered version of the subject instead.
+        use:
+          latest:
+            version: true
       discrepancies-out:
         connector: smallrye-kafka
         topic: ${KAFKA_TOPIC_DISCREPANCIES_OUT}
-        key.serializer: org.apache.kafka.common.serialization.StringSerializer
-        auto.register.schemas: false
+        key:
+          serializer: org.apache.kafka.common.serialization.StringSerializer
+        auto:
+          register:
+            schemas: false
+        # With auto-registration off the serializer would look up the exact schema of the generated
+        # class, which differs from the registered .avsc (e.g. avro.java.string) and returns 404
+        # (error 40403). Use the latest registered version of the subject instead.
+        use:
+          latest:
+            version: true
 
 reconciliation:
   tolerance:

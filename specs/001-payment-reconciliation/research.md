@@ -275,3 +275,25 @@ Cerrado salvo las líneas marcadas **pendiente**. Quarkus fijado en **3.31.2** (
 - Con `quarkus-config-yaml`, Context7 recomienda no tener `application.properties`; si coexisten, gana el YAML. Para los tests se usa `src/test/resources/application.yaml` en lugar de `.properties` (**a confirmar en el primer test**).
 
 **Versiones fijadas**: Quarkus 3.31.2, openapi-generator 7.27.0, MapStruct 1.6.3, Lombok 1.18.48, java-uuid-generator 5.2.0, kafka-avro-serializer 8.4.0, maven-checkstyle-plugin 3.6.0 + Checkstyle 14.4.0, spotless-maven-plugin 3.11.0, awaitility 4.3.0.
+
+### Correcciones tras la prueba contra un broker real (2026-11-09)
+
+Detectadas al arrancar el servicio contra el `docker-compose.yml` local; los tests en memoria no
+podían verlas.
+
+- **R-09 (corregida)**: `schema.registry.url` y `basic.auth.*` NO se propagan desde el prefijo
+  global `kafka.*`. Van bajo `mp.messaging.connector.smallrye-kafka`.
+- **YAML y claves con puntos (nueva)**: en `application.yaml` una clave como
+  `dead-letter-queue.topic` se lee como UN segmento entrecomillado y la propiedad **no se aplica**
+  (la DLQ caía al nombre por defecto `dead-letter-topic-<canal>`, que la constitución VIII prohíbe).
+  Toda propiedad con puntos se escribe anidada.
+- **R-06 (ampliada)**: con `auto.register.schemas=false` el serializer busca el esquema exacto de la
+  clase generada (difiere del `.avsc`, p. ej. `avro.java.string`) y falla con `40403`. Se añade
+  `use.latest.version: true` en los canales de salida.
+- **Concurrencia (resuelta, opción A aprobada)**: `@RunOnVirtualThread` despacha cada mensaje en su
+  propio hilo virtual (hasta 1024 a la vez) y anula el orden secuencial por defecto de Quarkus
+  Messaging. Dos movimientos de la misma referencia se procesaron en paralelo y el segundo ganó.
+  Solución: `OperationLocks` (64 `ReentrantLock` justos, elegidos por el hash de la referencia)
+  serializa el procesamiento por referencia en ambos consumers. Garantiza **exclusión mutua**
+  (SC-004: como máximo una resolución y una publicación), **no orden estricto**: el orden de
+  llegada sigue dependiendo de que los productores usen la referencia como key.

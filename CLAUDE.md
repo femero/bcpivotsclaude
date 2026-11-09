@@ -47,7 +47,8 @@ infrastructure/{adapter/in/{kafka,rest},adapter/out/{persistence,redis,messaging
   transición; `IllegalStateTransitionException` es red de seguridad, no control de flujo.
 - Idempotencia solo por `operationReference`, nunca por id de evento. La garantía real es el índice
   `UNIQUE` (`db/schema.sql`); Redis solo acelera. Un duplicado se trata como éxito.
-- Los consumers (`@Incoming` + `@RunOnVirtualThread`) hacen ack al volver y nack al lanzar
+- Los consumers (`@Incoming` + `@RunOnVirtualThread`) toman `OperationLocks` por referencia (los
+  hilos virtuales corren en paralelo) y hacen ack al volver y nack al lanzar
   excepción; la estrategia `dead-letter-queue` desvía al topic DLQ de su canal.
 
 ## Contratos
@@ -58,6 +59,11 @@ JAX-RS por `openapi-generator-maven-plugin`) viven en `target/` y no se versiona
 `avro-maven-plugin`. Campos Avro nuevos siempre con `default`.
 
 ## Reglas que más se rompen
+
+- **YAML sin claves con puntos**: en `application.yaml` escribe `dead-letter-queue: {topic: ...}`
+  anidado, nunca `dead-letter-queue.topic:`. La clave con puntos se ignora en silencio y la DLQ cae
+  al nombre por defecto. Las propiedades del Schema Registry van bajo
+  `mp.messaging.connector.smallrye-kafka`.
 
 - **Verificar con Context7 antes de usar** cualquier librería, propiedad o anotación. Si no se puede
   verificar, se anota y se reporta; nunca se adivina.
@@ -94,7 +100,14 @@ JAX-RS por `openapi-generator-maven-plugin`) viven en `target/` y no se versiona
 1. Un movimiento que llega antes que su pago se descarta y el pago queda `PENDING` para siempre.
 2. Sin outbox: un fallo entre el commit y la publicación deja la conciliación resuelta sin evento.
 
+## Entorno local
+
+`docker-compose.yml` (solo local, constitución III v1.1.0): PostgreSQL, Redis 7.4, Kafka y Schema
+Registry. Topics, esquemas y `db/schema.sql` los aplica una persona. Pasos en el `README`.
+
 ## Pendiente de verificar
 
-Nada se ha ejecutado contra Supabase, Redis (requiere ≥ 7.0), Confluent Cloud ni con
-`-Djdk.tracePinnedThreads=full`. El desvío real a cada DLQ tampoco está probado.
+Verificado contra el compose local: arranque, consumo, DLQ, publicación y consulta REST. Sin
+verificar: Supabase, Confluent Cloud (SASL_SSL) y `-Djdk.tracePinnedThreads=full`. La
+concurrencia de `@RunOnVirtualThread` se acota con `OperationLocks` (exclusión mutua por
+referencia, no orden estricto; ver `research.md`).

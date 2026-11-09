@@ -46,7 +46,27 @@ no arranca. Copiar `.env.example` a `.env` (que no se versiona) y rellenar los v
 
 Los topics salientes se publican con la referencia de operación como key. Se asume que los
 productores de los topics entrantes hacen lo mismo, para que los mensajes de una misma operación
-se procesen en serie y en orden.
+se procesen en serie y en orden. El servicio garantiza la exclusión mutua por referencia
+(`OperationLocks`), no el orden estricto: éste depende de esa key.
+
+## Entorno local con Docker Compose
+
+`docker-compose.yml` (solo desarrollo local, constitución III) levanta PostgreSQL 16, Redis 7.4,
+Kafka (KRaft, PLAINTEXT) y Schema Registry de Confluent. **No** crea topics, no registra
+esquemas y no aplica `db/schema.sql`: una persona hace esos tres pasos.
+
+1. Crear `.env` desde `.env.example` con valores locales, por ejemplo:
+   `DB_URL=jdbc:postgresql://localhost:5432/reconciliation`, `DB_USERNAME`/`DB_PASSWORD` a
+   elección (los usa también el compose), `REDIS_HOSTS=redis://localhost:6379`,
+   `KAFKA_BOOTSTRAP_SERVERS=localhost:9092`, `SCHEMA_REGISTRY_URL=http://localhost:8081`, las
+   credenciales de Kafka y del registry con cualquier valor (el broker local no las valida) y
+   los seis nombres de topic.
+2. `docker compose up -d --wait`
+3. Ejecutar `db/schema.sql` contra la base `reconciliation`.
+4. Crear los seis topics (entradas, DLQ y salidas) y registrar a mano los esquemas de
+   `src/main/avro`. **Registrar el `.avsc` tal cual** es suficiente para los canales de salida:
+   el serializer usa la última versión registrada (`use.latest.version`).
+5. `mvn quarkus:dev`. El perfil `dev` usa `PLAINTEXT`; el resto de perfiles usa `SASL_SSL`.
 
 ## Ejecutar
 

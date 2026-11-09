@@ -39,7 +39,8 @@ openapi-generator, Checkstyle, Spotless y JUnit.
 ### III. Infraestructura Gestionada por el Equipo
 
 La infraestructura ya existe y la configura una persona. El agente NO la provisiona, NO la
-configura y NO genera scripts para crearla.
+configura y NO genera scripts para crearla. La única excepción es el `docker-compose.yml` de
+desarrollo local descrito más abajo en este principio.
 
 - **Kafka y Schema Registry**: Confluent Cloud, topics ya creados. El código solo referencia
   nombres de topic; nunca declara particiones, réplicas ni retención.
@@ -51,8 +52,20 @@ configura y NO genera scripts para crearla.
 - PROHIBIDO Flyway y cualquier herramienta de migración. El DDL se entrega en
   `db/schema.sql` para que una persona lo ejecute. Hibernate nunca crea, valida ni altera el
   esquema.
-- PROHIBIDO docker-compose, Kubernetes, Terraform y scripts de creación de topics. Quarkus
-  Dev Services desactivado: nunca se levantan contenedores.
+- PROHIBIDO Kubernetes, Terraform y scripts de creación de topics. Quarkus Dev Services
+  desactivado: la aplicación y sus tests nunca levantan contenedores.
+- **Entorno local con Docker Compose (excepción acotada).** El repositorio PUEDE contener UN
+  `docker-compose.yml` en la raíz, solo para desarrollo local, que levanta PostgreSQL,
+  Redis (>= 7.0), Kafka y Schema Registry de Confluent. Reglas:
+  - No sustituye a la infraestructura del equipo (Confluent Cloud, Supabase, Redis del equipo),
+    que sigue siendo la fuente para cualquier entorno compartido.
+  - No crea topics ni registra esquemas: siguen prohibidos los scripts de creación de topics y el
+    auto-registro de esquemas. Una persona crea los topics y registra los esquemas a mano.
+  - No aplica `db/schema.sql` ni usa Flyway, `initdb` u otro mecanismo automático desde el
+    repositorio: una persona ejecuta el DDL.
+  - No contiene credenciales reales ni variables fuera de la lista cerrada de dieciséis. Los
+    valores locales viven en `.env` (ignorado); `.env.example` solo lleva los nombres.
+  - Es un apoyo para ejecutar el servicio; la suite de tests sigue sin depender de él (XIII).
 - Responsabilidad del agente: declarar las variables en `.env.example` y listar en el
   `README` las variables que nombran los topics (DLQ incluidos) con su rol.
 
@@ -251,10 +264,17 @@ reales que el equipo haya creado.
 | `docs/glossary.md` | La tabla de equivalencias anterior                                                     |
 | `README`           | Las variables que nombran los topics usados, DLQ incluidos, con su rol, y la ausencia de outbox con su riesgo |
 
+**Artefactos que el repositorio PUEDE contener:**
+
+| Artefacto            | Condiciones                                                                         |
+| -------------------- | ----------------------------------------------------------------------------------- |
+| `docker-compose.yml` | Uno solo, en la raíz, solo para desarrollo local, con PostgreSQL, Redis >= 7.0, Kafka y Schema Registry de Confluent. Sujeto a las reglas del Principio III |
+
 **Artefactos y dependencias PROHIBIDOS:** Apicurio y cualquier registry o serde que no sea el
-de Confluent, docker-compose, manifiestos de Kubernetes, Terraform, scripts de creación de
-topics, migraciones Flyway, Quarkus Dev Services activo y cualquier archivo con una
-credencial, URL de conexión o token literal.
+de Confluent, cualquier `docker-compose` distinto del único permitido por el Principio III,
+manifiestos de Kubernetes, Terraform, scripts de creación de topics o de registro de esquemas,
+migraciones Flyway, Quarkus Dev Services activo y cualquier archivo con una credencial, URL de
+conexión o token literal.
 
 ## Flujo de Trabajo y Puertas de Calidad
 
@@ -306,4 +326,4 @@ que cumpla.
 **Guía en tiempo de desarrollo.** Los specs y planes generados por Spec Kit bajo `specs/` son
 la fuente de alcance; esta constitución es la fuente de restricciones.
 
-**Version**: 1.0.0 | **Ratified**: 2026-11-09 | **Last Amended**: 2026-11-09
+**Version**: 1.1.0 | **Ratified**: 2026-11-09 | **Last Amended**: 2026-11-09

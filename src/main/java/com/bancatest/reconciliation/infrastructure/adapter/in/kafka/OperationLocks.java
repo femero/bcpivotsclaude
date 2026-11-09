@@ -5,17 +5,16 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Serializes the processing of messages that share an operation reference.
+ * Mutual exclusion per operation reference <em>across</em> the two consumers.
  *
- * <p>{@code @RunOnVirtualThread} dispatches every message on its own virtual thread, so two
- * messages of the same operation (or a payment and its core transaction) could otherwise run at the
- * same time and both pass the {@code isResolved()} check. A fixed set of fair {@link
- * ReentrantLock}s, picked by the hash of the reference, gives mutual exclusion per operation
- * without unbounded memory. Different operations may share a stripe; that only costs a short wait.
+ * <p>Each consumer already processes its own channel one message at a time and in arrival order
+ * (worker concurrency 1, see application.yaml), but the two channels run in parallel, so a payment
+ * and the core transaction of the same operation could still overlap. A fixed set of fair {@link
+ * ReentrantLock}s, picked by the hash of the reference, excludes them without unbounded memory.
+ * Different operations may share a stripe; that only costs a short wait.
  *
- * <p>Fair locks favour arrival order but the dispatch order of virtual threads is not guaranteed,
- * so this ensures "one at a time", not strict ordering. Strict order depends on producers keying
- * messages by operation reference, which keeps them in one partition.
+ * <p>This is exclusion, not ordering between channels: which of the two arrives first is not
+ * guaranteed (a known limitation of the service, documented in the README).
  */
 @ApplicationScoped
 public class OperationLocks {

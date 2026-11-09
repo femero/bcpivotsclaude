@@ -290,10 +290,14 @@ podían verlas.
 - **R-06 (ampliada)**: con `auto.register.schemas=false` el serializer busca el esquema exacto de la
   clase generada (difiere del `.avsc`, p. ej. `avro.java.string`) y falla con `40403`. Se añade
   `use.latest.version: true` en los canales de salida.
-- **Concurrencia (resuelta, opción A aprobada)**: `@RunOnVirtualThread` despacha cada mensaje en su
-  propio hilo virtual (hasta 1024 a la vez) y anula el orden secuencial por defecto de Quarkus
-  Messaging. Dos movimientos de la misma referencia se procesaron en paralelo y el segundo ganó.
-  Solución: `OperationLocks` (64 `ReentrantLock` justos, elegidos por el hash de la referencia)
-  serializa el procesamiento por referencia en ambos consumers. Garantiza **exclusión mutua**
-  (SC-004: como máximo una resolución y una publicación), **no orden estricto**: el orden de
-  llegada sigue dependiendo de que los productores usen la referencia como key.
+- **Concurrencia y orden (resuelto)**: `@RunOnVirtualThread` despacha cada mensaje en su propio hilo
+  virtual (hasta 1024 a la vez) y anula el orden secuencial por defecto de Quarkus Messaging. Dos
+  movimientos de la misma referencia se procesaron en paralelo y el segundo ganó. Solución en dos
+  capas: (1) cada consumer lleva `@RunOnVirtualThread` + `@Blocking("<worker>")` con
+  `smallrye.messaging.worker.<worker>.max-concurrency: 1`, así los mensajes de un canal se procesan
+  de uno en uno y **en orden de llegada** (documentado en Quarkus 3.31.2); (2) `OperationLocks`
+  (64 `ReentrantLock` justos por hash de la referencia) excluye entre sí a los dos canales, que
+  corren en paralelo. Test de regresión: `messagesOfAReferenceAreProcessedInArrivalOrder`
+  (falló 3/3 antes del cambio, pasa 5/5 después). El orden **entre canales** sigue sin
+  garantizarse (limitación 1 del spec); el orden dentro de un canal depende de que los
+  productores usen la referencia como key.

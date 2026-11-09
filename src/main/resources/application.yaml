@@ -117,6 +117,17 @@ mp:
           latest:
             version: true
 
+# Each consumer runs on virtual threads but with concurrency 1, so the messages of a channel are
+# processed one at a time in arrival order. Without it @RunOnVirtualThread runs up to 1024 at once
+# and two messages of the same operation can overtake each other.
+smallrye:
+  messaging:
+    worker:
+      payments-worker:
+        max-concurrency: 1
+      core-transactions-worker:
+        max-concurrency: 1
+
 reconciliation:
   tolerance:
     amount: "1.00"

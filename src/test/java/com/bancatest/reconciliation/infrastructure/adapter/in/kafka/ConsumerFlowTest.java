@@ -195,4 +195,40 @@ class ConsumerFlowTest {
     assertEquals(ReconciliationStatus.PENDING, statusOf("OP-6"));
     assertTrue(connector.sink("results-out").received().isEmpty());
   }
+
+  @Test
+  void messagesOfAReferenceAreProcessedInArrivalOrder() {
+    int references = 30;
+    for (int i = 0; i < references; i++) {
+      connector.source("payments-in").send(payment("ORD-" + i, "100.00", "PEN"));
+    }
+    for (int i = 0; i < references; i++) {
+      awaitReconciliation("ORD-" + i);
+    }
+
+    // For every reference the 99.00 movement arrives first and the 50.00 one right after it.
+    // Only the first may resolve it: out-of-order processing would leave some as MISMATCHED.
+    for (int i = 0; i < references; i++) {
+      connector.source("core-transactions-in").send(core("ORD-" + i, "99.00"));
+      connector.source("core-transactions-in").send(core("ORD-" + i, "50.00"));
+    }
+
+    await()
+        .atMost(Duration.ofSeconds(20))
+        .until(() -> {
+          for (int i = 0; i < references; i++) {
+            if (statusOf("ORD-" + i) == ReconciliationStatus.PENDING) {
+              return false;
+            }
+          }
+          return true;
+        });
+    for (int i = 0; i < references; i++) {
+      assertEquals(ReconciliationStatus.MATCHED, statusOf("ORD-" + i), "ORD-" + i);
+    }
+    await()
+        .atMost(Duration.ofSeconds(10))
+        .until(() -> connector.sink("results-out").received().size() == references);
+    assertEquals(0, connector.sink("discrepancies-out").received().size());
+  }
 }

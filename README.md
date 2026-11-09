@@ -9,7 +9,8 @@ importes contra una tolerancia fija de PEN 1.00 y publica el resultado como conf
 `GET /v1/reconciliations/{operationReference}`.
 
 Documentación de diseño: [`specs/001-payment-reconciliation/`](specs/001-payment-reconciliation/).
-Glosario de negocio: [`docs/glossary.md`](docs/glossary.md).
+Glosario de negocio: [`docs/glossary.md`](docs/glossary.md). Diagramas de secuencia (Mermaid):
+[`docs/sequence.md`](docs/sequence.md).
 
 ## Infraestructura (la gestiona el equipo)
 
@@ -46,8 +47,9 @@ no arranca. Copiar `.env.example` a `.env` (que no se versiona) y rellenar los v
 
 Los topics salientes se publican con la referencia de operación como key. Se asume que los
 productores de los topics entrantes hacen lo mismo, para que los mensajes de una misma operación
-se procesen en serie y en orden. El servicio garantiza la exclusión mutua por referencia
-(`OperationLocks`), no el orden estricto: éste depende de esa key.
+se procesen en serie y en orden. Dentro de cada canal el servicio procesa los mensajes de uno en uno y en orden de llegada
+(`max-concurrency: 1` por consumer); `OperationLocks` evita que el pago y el movimiento de una
+misma operación se solapen. El orden entre canales no está garantizado (limitación 1).
 
 ## Entorno local con Docker Compose
 

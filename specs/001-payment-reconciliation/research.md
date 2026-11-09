@@ -248,3 +248,30 @@ el interceptor desaparece sin aviso. No se "arregla" partiendo la clase.
    desactualizados** respecto a su propio `CLAUDE.md`: siguen diciendo `setAndChanged`. No se
    tocó `ms-test`; se reporta.
 2. **P-00 abierto**: re-verificar con Context7 todo lo marcado HEREDADA y fijar versiones.
+
+---
+
+## P-00 — Re-verificación (2026-11-09, Context7 + jars)
+
+Cerrado salvo las líneas marcadas **pendiente**. Quarkus fijado en **3.31.2** (versión que Context7 documenta).
+
+| Decisión | Resultado | Fuente |
+| --- | --- | --- |
+| R-01 `schema-management.strategy=none`, `sql-load-script=no-file` | Verificada | Context7 Quarkus 3.31.2 |
+| R-02 `quarkus.devservices.enabled=false` | Verificada (propiedad global documentada) | Context7 |
+| R-03 DLQ: estrategia, `dead-letter-queue.topic`, cabeceras `dead-letter-*`, offset commiteado | Verificada | Context7 |
+| R-04 `setGet(K,V,SetArgs)` con `SetArgs.nx().ex(...)` | Verificada contra el jar `quarkus-redis-client-3.31.2` (`javap`); `setAndChanged` **no existe**. `SET NX GET` exige Redis >= 7.0 | jar |
+| R-06 Confluent: `quarkus-confluent-registry-avro` + `quarkus-rest-client` + `kafka-avro-serializer` excluyendo `jakarta.ws.rs-api`, repo `packages.confluent.io`; `auto.register.schemas` default `true` | Verificada. Serializer 8.4.0 (resuelve Avro 1.12.1) | Context7 + Maven |
+| R-07 MapStruct `JAKARTA_CDI`, `@MapperConfig.unmappedTargetPolicy` | Verificada (1.6.3) | Context7 |
+| R-10 Avro codegen en `quarkus-avro`, sin plugin Maven | Verificada. Nombres exactos `avro.codegen.*` (`enableDecimalLogicalType`, `stringType`): **pendiente**, se comprueban al primer build | Context7 |
+| R-11 pgjdbc | El BOM de Quarkus 3.31.2 resuelve **42.7.9** (>= mínimo). No se sobrescribe | `mvn dependency:tree` |
+| R-12 openapi-generator `jaxrs-spec`/`quarkus`, `useJakartaEe`, `useSwaggerAnnotations`, `dateLibrary=java8`, `returnResponse`, `interfaceOnly` | Verificada. Plugin **7.27.0** | Context7 |
+| R-13 (ya no aplica) | La frontera transaccional pasa a `TransactionalExecutor` | plan.md |
+| R-14 `InMemoryConnector.switchIncomingChannelsToInMemory/OutgoingChannelsToInMemory` + `clear()`; `@RunOnVirtualThread` en métodos de mensajería | Verificada | Context7 |
+| `QuarkusTransaction.requiringNew().call(...)` (`io.quarkus.narayana.jta`) | Verificada | Context7 |
+
+**Correcciones al plan**
+- La extensión Kafka se llama hoy **`quarkus-messaging-kafka`** (no `quarkus-smallrye-reactive-messaging-kafka`).
+- Con `quarkus-config-yaml`, Context7 recomienda no tener `application.properties`; si coexisten, gana el YAML. Para los tests se usa `src/test/resources/application.yaml` en lugar de `.properties` (**a confirmar en el primer test**).
+
+**Versiones fijadas**: Quarkus 3.31.2, openapi-generator 7.27.0, MapStruct 1.6.3, Lombok 1.18.48, java-uuid-generator 5.2.0, kafka-avro-serializer 8.4.0, maven-checkstyle-plugin 3.6.0 + Checkstyle 14.4.0, spotless-maven-plugin 3.11.0, awaitility 4.3.0.

@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<!DOCTYPE import-control PUBLIC
+    "-//Checkstyle//DTD ImportControl Configuration 1.4//EN"
+    "https://checkstyle.org/dtds/import_control_1_4.dtd">
+<import-control pkg="com.bancatest.reconciliation">
+  <allow pkg="java"/>
+  <allow pkg="org.junit"/>
+  <allow pkg="org.mockito"/>
+
+  <subpackage name="domain">
+    <allow pkg="com.bancatest.reconciliation.domain"/>
+  </subpackage>
+
+  <subpackage name="application">
+    <allow pkg="com.bancatest.reconciliation.support"/>
+    <allow pkg="com.bancatest.reconciliation.domain"/>
+    <allow pkg="com.bancatest.reconciliation.application"/>
+  </subpackage>
+
+  <subpackage name="infrastructure">
+    <allow pkg="com.bancatest.reconciliation"/>
+    <allow pkg="jakarta"/>
+    <allow pkg="io"/>
+    <allow pkg="org"/>
+    <allow pkg="lombok"/>
+    <allow pkg="com.fasterxml"/>
+    <allow pkg="pe.com.bancatest"/>
+  </subpackage>
+
+  <subpackage name="support">
+    <allow pkg="pe.com.bancatest"/>
+    <allow pkg="com.bancatest.reconciliation"/>
+    <allow pkg="jakarta"/>
+    <allow pkg="io"/>
+    <allow pkg="org"/>
+  </subpackage>
+</import-control>

@@ -29,7 +29,7 @@ filtro previo.
 
 **Primary Dependencies**: Quarkus 3.x (3.31.2 en `ms-test`; fijar en P-00) — `quarkus-rest`,
 `quarkus-rest-jackson`, `quarkus-config-yaml`, `quarkus-hibernate-orm-panache`,
-`quarkus-jdbc-postgresql`, `quarkus-redis-client`, `quarkus-smallrye-reactive-messaging-kafka`,
+`quarkus-jdbc-postgresql`, `quarkus-redis-client`, `quarkus-messaging-kafka`,
 `quarkus-confluent-registry-avro`, `quarkus-rest-client` (lo exige el serde de Confluent),
 `quarkus-hibernate-validator` (lo exige el código generado con `useBeanValidation`) y
 `quarkus-logging-json`. Fuera de Quarkus: MapStruct, Lombok (solo entidades JPA),

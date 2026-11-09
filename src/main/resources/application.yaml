@@ -1,0 +1,77 @@
+quarkus:
+  devservices:
+    enabled: false
+  http:
+    root-path: /v1
+  datasource:
+    db-kind: postgresql
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    jdbc:
+      url: ${DB_URL}
+      min-size: 5
+      max-size: 16
+  hibernate-orm:
+    schema-management:
+      strategy: none
+    sql-load-script: no-file
+  redis:
+    hosts: ${REDIS_HOSTS}
+  log:
+    console:
+      json:
+        enabled: true
+
+avro:
+  codegen:
+    enableDecimalLogicalType: true
+    stringType: String
+
+kafka:
+  bootstrap.servers: ${KAFKA_BOOTSTRAP_SERVERS}
+  security.protocol: SASL_SSL
+  sasl.mechanism: PLAIN
+  sasl.jaas.config: >-
+    org.apache.kafka.common.security.plain.PlainLoginModule required
+    username='${KAFKA_API_KEY}' password='${KAFKA_API_SECRET}';
+  schema.registry.url: ${SCHEMA_REGISTRY_URL}
+  basic.auth.credentials.source: USER_INFO
+  basic.auth.user.info: ${SCHEMA_REGISTRY_API_KEY}:${SCHEMA_REGISTRY_API_SECRET}
+
+mp:
+  messaging:
+    incoming:
+      payments-in:
+        connector: smallrye-kafka
+        topic: ${KAFKA_TOPIC_PAYMENTS_IN}
+        enable.auto.commit: false
+        failure-strategy: dead-letter-queue
+        dead-letter-queue.topic: ${KAFKA_TOPIC_PAYMENTS_DLQ}
+        partition.assignment.strategy: >-
+          org.apache.kafka.clients.consumer.CooperativeStickyAssignor
+      core-transactions-in:
+        connector: smallrye-kafka
+        topic: ${KAFKA_TOPIC_CORE_TRANSACTIONS_IN}
+        enable.auto.commit: false
+        failure-strategy: dead-letter-queue
+        dead-letter-queue.topic: ${KAFKA_TOPIC_CORE_TRANSACTIONS_DLQ}
+        partition.assignment.strategy: >-
+          org.apache.kafka.clients.consumer.CooperativeStickyAssignor
+    outgoing:
+      results-out:
+        connector: smallrye-kafka
+        topic: ${KAFKA_TOPIC_RESULTS_OUT}
+        key.serializer: org.apache.kafka.common.serialization.StringSerializer
+        auto.register.schemas: false
+      discrepancies-out:
+        connector: smallrye-kafka
+        topic: ${KAFKA_TOPIC_DISCREPANCIES_OUT}
+        key.serializer: org.apache.kafka.common.serialization.StringSerializer
+        auto.register.schemas: false
+
+reconciliation:
+  tolerance:
+    amount: "1.00"
+    currency: PEN
+  idempotency:
+    ttl: PT24H

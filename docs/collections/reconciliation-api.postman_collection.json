@@ -1,0 +1,114 @@
+{
+  "info": {
+    "name": "Payment Reconciliation - REST API (CU-03)",
+    "description": "Collection for GET /v1/reconciliations/{operationReference}. The data is created by docs/collections/scenarios.sh (run it with RUN=DEMO first, or change the `run` variable to the RUN you used). Kafka use cases (CU-01, 02, 04, 05, 06, 07) are exercised by that script and verified here through the API.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "run", "value": "DEMO" }
+  ],
+  "item": [
+    {
+      "name": "CU-03 Consultar conciliación",
+      "item": [
+        {
+          "name": "CU-03 200 resolved MATCHED (difference 0.00) [after CU-02]",
+          "request": { "method": "GET", "header": [{ "key": "Accept", "value": "application/json" }], "url": { "raw": "{{baseUrl}}/v1/reconciliations/{{run}}-CU02-MATCH", "host": ["{{baseUrl}}"], "path": ["v1", "reconciliations", "{{run}}-CU02-MATCH"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('200 JSON', () => { pm.response.to.have.status(200); pm.response.to.have.header('Content-Type', /application\\/json/); });",
+            "const b = pm.response.json();",
+            "pm.test('MATCHED with exact difference', () => { pm.expect(b.status).to.eql('MATCHED'); pm.expect(b.difference.amount).to.eql('0.00'); pm.expect(b.coreAmount.amount).to.eql('100.00'); pm.expect(b.resolvedAt).to.be.a('string'); });"
+          ] } }]
+        },
+        {
+          "name": "CU-03 200 MATCHED at tolerance limit (difference 1.00) [after CU-02]",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/v1/reconciliations/{{run}}-CU02-LIMIT", "host": ["{{baseUrl}}"], "path": ["v1", "reconciliations", "{{run}}-CU02-LIMIT"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const b = pm.response.json();",
+            "pm.test('limit is inclusive', () => { pm.response.to.have.status(200); pm.expect(b.status).to.eql('MATCHED'); pm.expect(b.difference.amount).to.eql('1.00'); });"
+          ] } }]
+        },
+        {
+          "name": "CU-03 200 MISMATCHED (difference 1.01) [after CU-02]",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/v1/reconciliations/{{run}}-CU02-OVER", "host": ["{{baseUrl}}"], "path": ["v1", "reconciliations", "{{run}}-CU02-OVER"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const b = pm.response.json();",
+            "pm.test('over tolerance', () => { pm.response.to.have.status(200); pm.expect(b.status).to.eql('MISMATCHED'); pm.expect(b.difference.amount).to.eql('1.01'); });"
+          ] } }]
+        },
+        {
+          "name": "CU-03 200 MISMATCHED negative difference (core charged more) [after CU-02]",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/v1/reconciliations/{{run}}-CU02-CHARGED-MORE", "host": ["{{baseUrl}}"], "path": ["v1", "reconciliations", "{{run}}-CU02-CHARGED-MORE"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const b = pm.response.json();",
+            "pm.test('negative difference', () => { pm.response.to.have.status(200); pm.expect(b.status).to.eql('MISMATCHED'); pm.expect(b.difference.amount).to.eql('-0.50'); });"
+          ] } }]
+        },
+        {
+          "name": "CU-03 200 PENDING without difference [after CU-01]",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/v1/reconciliations/{{run}}-CU01-PENDING", "host": ["{{baseUrl}}"], "path": ["v1", "reconciliations", "{{run}}-CU01-PENDING"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const b = pm.response.json();",
+            "pm.test('pending, no core data', () => { pm.response.to.have.status(200); pm.expect(b.status).to.eql('PENDING'); pm.expect(b).to.not.have.property('difference'); pm.expect(b).to.not.have.property('coreAmount'); });"
+          ] } }]
+        },
+        {
+          "name": "CU-03 404 unknown reference (problem+json)",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/v1/reconciliations/DOES-NOT-EXIST", "host": ["{{baseUrl}}"], "path": ["v1", "reconciliations", "DOES-NOT-EXIST"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('404 problem+json', () => { pm.response.to.have.status(404); pm.response.to.have.header('Content-Type', /application\\/problem\\+json/); });"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "CU-04 Descartar duplicados (verificación)",
+      "item": [
+        {
+          "name": "CU-04 first payment wins (100.00, second 999.00 ignored) [after scenarios.sh cu04]",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/v1/reconciliations/{{run}}-CU04-DUP", "host": ["{{baseUrl}}"], "path": ["v1", "reconciliations", "{{run}}-CU04-DUP"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "const b = pm.response.json();",
+            "pm.test('single effect', () => { pm.response.to.have.status(200); pm.expect(b.paymentAmount.amount).to.eql('100.00'); pm.expect(b.status).to.eql('PENDING'); });"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "CU-05 Rechazar entradas inválidas (verificación)",
+      "item": [
+        {
+          "name": "CU-05 payment in USD creates nothing [after scenarios.sh cu05]",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/v1/reconciliations/{{run}}-CU05-USD", "host": ["{{baseUrl}}"], "path": ["v1", "reconciliations", "{{run}}-CU05-USD"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('404', () => pm.response.to.have.status(404));"] } }]
+        },
+        {
+          "name": "CU-05 payment with zero amount creates nothing [after scenarios.sh cu05]",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/v1/reconciliations/{{run}}-CU05-ZERO", "host": ["{{baseUrl}}"], "path": ["v1", "reconciliations", "{{run}}-CU05-ZERO"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('404', () => pm.response.to.have.status(404));"] } }]
+        },
+        {
+          "name": "CU-05 payment without account creates nothing [after scenarios.sh cu05]",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/v1/reconciliations/{{run}}-CU05-NOACC", "host": ["{{baseUrl}}"], "path": ["v1", "reconciliations", "{{run}}-CU05-NOACC"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('404', () => pm.response.to.have.status(404));"] } }]
+        },
+        {
+          "name": "CU-05 invalid core movements leave the reconciliation PENDING [after scenarios.sh cu05]",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/v1/reconciliations/{{run}}-CU05-CORE", "host": ["{{baseUrl}}"], "path": ["v1", "reconciliations", "{{run}}-CU05-CORE"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('still PENDING', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().status).to.eql('PENDING'); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "CU-06 Descartar movimiento huérfano (verificación)",
+      "item": [
+        {
+          "name": "CU-06 orphan core movement creates nothing [after scenarios.sh cu06]",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/v1/reconciliations/{{run}}-CU06-ORPHAN", "host": ["{{baseUrl}}"], "path": ["v1", "reconciliations", "{{run}}-CU06-ORPHAN"] } },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('404', () => pm.response.to.have.status(404));"] } }]
+        }
+      ]
+    }
+  ]
+}

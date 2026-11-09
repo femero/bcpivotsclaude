@@ -1,6 +1,6 @@
 # Taller de Redis con IA: aprender y experimentar con un asistente (30 minutos)
 
-Es el mismo recorrido de [`taller-quarkus.md`](taller-quarkus.md), pero en lugar de copiar comandos
+Es el mismo recorrido de [`taller-redis.md`](taller-redis.md), pero en lugar de copiar comandos
 le pides el trabajo a un asistente de IA (Claude Code) con prompts bien estructurados. Aprendes dos
 cosas a la vez: Redis y cómo pedirle las cosas a una IA.
 
@@ -217,7 +217,7 @@ Que yo pueda abrir cada referencia y comprobar que dice lo que afirmas.
 Prepárame el entorno completo para probar el servicio: levanta todos los servicios de docker
 compose, aplica db/schema.sql en PostgreSQL, crea los seis topics de Kafka y registra los cuatro
 esquemas de src/main/avro en el Schema Registry. Usa los nombres de topic de .env.example y de
-docs/taller-quarkus.md.
+docs/taller-redis.md.
 
 # Restricciones
 Solo local. No arranques Quarkus: te diré yo cuando esté listo. Si un paso falla, detente y

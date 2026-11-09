@@ -8,6 +8,13 @@
 
 **Input**: User description: "Servicio de conciliación de pagos. DEMO técnica. Verifica que cada pago reportado tenga su movimiento del core, compara los importes y reporta los casos que no cuadran."
 
+## Clarifications
+
+### Session 2026-11-09
+
+- Q: ¿Se registra y se devuelve en la consulta la diferencia de una conciliación MATCHED, o solo la de una MISMATCHED? → A: Se registra en toda conciliación resuelta (MATCHED y MISMATCHED) y la consulta la devuelve siempre que exista; PENDING no tiene diferencia.
+- Q: ¿Qué debe hacer el servicio cuando un pago o un movimiento trae un monto con más de 2 decimales? → A: Se redondea a 2 decimales con redondeo half-up y se procesa; no se rechaza.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Conciliación automática de un pago con su movimiento (Priority: P1)
@@ -86,8 +93,8 @@ cambia ni se publica nada.
 
 ### User Story 3 - Consulta del detalle de una conciliación (Priority: P3)
 
-Quien investiga una incidencia necesita ver el estado de una conciliación concreta y, si es
-discrepante, la diferencia exacta, partiendo del único dato que maneja: la referencia de
+Quien investiga una incidencia necesita ver el estado de una conciliación concreta y, si está
+resuelta, la diferencia exacta, partiendo del único dato que maneja: la referencia de
 operación.
 
 **Why this priority**: es una capacidad de lectura sobre datos que las historias anteriores ya
@@ -120,6 +127,8 @@ verifica que responde no encontrada.
   segundo encuentra una conciliación ya resuelta y se descarta por FR-020.
 - **Pago y movimiento con monedas distintas entre sí**: no puede darse, porque ambos se validan
   contra PEN en la entrada (FR-022) y cualquier otra moneda se aparta antes de la comparación.
+- **Monto con más de 2 decimales**: se normaliza con half-up antes de validar (FR-023). PEN
+  100.005 se procesa como PEN 100.01; PEN 0.004 se normaliza a 0.00 y se rechaza por FR-022.
 - **Mensaje reentregado tras un fallo**: el reenvío se comporta como un duplicado (FR-019 para
   pagos, FR-020 para movimientos) y produce un único efecto.
 
@@ -148,7 +157,8 @@ verifica que responde no encontrada.
   positiva y mayor a la tolerancia, o cuando sea negativa, cualquiera que sea su magnitud.
 - **FR-008**: La tolerancia MUST ser un monto fijo con moneda, con valor PEN 1.00, obtenido de
   configuración externa y no embebido en la lógica.
-- **FR-009**: El sistema MUST registrar la diferencia exacta en las conciliaciones MISMATCHED.
+- **FR-009**: El sistema MUST registrar la diferencia exacta en toda conciliación resuelta,
+  tanto MATCHED como MISMATCHED. Una conciliación PENDING no tiene diferencia.
 
 **Estados**
 
@@ -177,7 +187,8 @@ verifica que responde no encontrada.
 **Consulta**
 
 - **FR-017**: Los usuarios MUST poder consultar el detalle de una conciliación por su referencia
-  de operación, obteniendo al menos su estado y, si es MISMATCHED, la diferencia.
+  de operación, obteniendo al menos su estado y, si está resuelta (MATCHED o MISMATCHED), la
+  diferencia.
 - **FR-018**: El sistema MUST responder "no encontrada" cuando se consulte una referencia de
   operación sin conciliación asociada.
 
@@ -205,6 +216,11 @@ verifica que responde no encontrada.
   El canal de mensajes fallidos de cada mensaje MUST ser el correspondiente al canal de entrada
   por el que llegó: un pago inválido va al de pagos reportados y un movimiento inválido al de
   movimientos del core. No existe un canal común adicional.
+- **FR-023**: El sistema MUST normalizar todo monto recibido a 2 decimales con redondeo
+  half-up (mitad hacia arriba) antes de validarlo y compararlo. Un monto con más de 2 decimales
+  no es inválido por ese motivo. La validación de monto positivo (FR-022) se aplica sobre el
+  monto ya normalizado. Montos numéricamente iguales, como `120.0` y `120.00`, son el mismo
+  monto.
 
 ### Key Entities
 

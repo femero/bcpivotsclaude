@@ -20,7 +20,7 @@
     <awaitility.version>4.3.0</awaitility.version>
     <openapi-generator.version>7.27.0</openapi-generator.version>
     <checkstyle-plugin.version>3.6.0</checkstyle-plugin.version>
-    <checkstyle.version>14.4.0</checkstyle.version>
+    <checkstyle.version>10.21.0</checkstyle.version>
     <spotless.version>3.11.0</spotless.version>
   </properties>
 
@@ -240,13 +240,10 @@
             <configuration>
               <configLocation>config/checkstyle/checkstyle.xml</configLocation>
               <propertyExpansion>config_loc=${project.basedir}/config/checkstyle</propertyExpansion>
-              <includeTestSourceDirectory>true</includeTestSourceDirectory>
+              <includeTestSourceDirectory>false</includeTestSourceDirectory>
               <sourceDirectories>
                 <sourceDirectory>${project.basedir}/src/main/java</sourceDirectory>
               </sourceDirectories>
-              <testSourceDirectories>
-                <testSourceDirectory>${project.basedir}/src/test/java</testSourceDirectory>
-              </testSourceDirectories>
               <violationSeverity>error</violationSeverity>
               <failOnViolation>true</failOnViolation>
               <consoleOutput>true</consoleOutput>

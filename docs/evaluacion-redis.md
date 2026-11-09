@@ -124,26 +124,3 @@ b) Redis actúa como un acelerador y la garantía de datos únicos no depende de
 c) La aplicación deja de poder consultar la base de datos
 d) El índice `UNIQUE` deja de funcionar
 
----
-
-## Clave de respuestas
-
-| # | Resp. | # | Resp. | # | Resp. | # | Resp. |
-|---|:-----:|---|:-----:|---|:-----:|---|:-----:|
-| 1 | b | 6 | b | 11 | a | 16 | c |
-| 2 | c | 7 | a | 12 | d | 17 | b |
-| 3 | b | 8 | d | 13 | a | 18 | a |
-| 4 | c | 9 | b | 14 | b | 19 | d |
-| 5 | d | 10 | c | 15 | a | 20 | b |
-
-## Interpretación del puntaje
-
-| Aciertos | Nivel |
-|---------:|-------|
-| 18–20 | Muy bueno: dominas lo básico |
-| 14–17 | Bueno: repasa los tipos de datos y el TTL |
-| 10–13 | Regular: revisa los comandos `SET`, `GET`, `DEL` y `INCR` |
-| < 10 | Necesitas repasar los conceptos básicos |
-
-Las preguntas 8, 19 y 20 se relacionan con este proyecto: `SET NX EX` como filtro de duplicados, con
-la base de datos como garantía final.

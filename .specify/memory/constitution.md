@@ -56,7 +56,8 @@ desarrollo local descrito más abajo en este principio.
   desactivado: la aplicación y sus tests nunca levantan contenedores.
 - **Entorno local con Docker Compose (excepción acotada).** El repositorio PUEDE contener UN
   `docker-compose.yml` en la raíz, solo para desarrollo local, que levanta PostgreSQL,
-  Redis (>= 7.0), Kafka y Schema Registry de Confluent. Reglas:
+  Redis (>= 7.0), Kafka y Schema Registry de Confluent y, opcionalmente, una consola web de
+  inspección (Redpanda Console). Reglas:
   - No sustituye a la infraestructura del equipo (Confluent Cloud, Supabase, Redis del equipo),
     que sigue siendo la fuente para cualquier entorno compartido.
   - No crea topics ni registra esquemas: siguen prohibidos los scripts de creación de topics y el
@@ -66,6 +67,10 @@ desarrollo local descrito más abajo en este principio.
   - No contiene credenciales reales ni variables fuera de la lista cerrada de dieciséis. Los
     valores locales viven en `.env` (ignorado); `.env.example` solo lleva los nombres.
   - Es un apoyo para ejecutar el servicio; la suite de tests sigue sin depender de él (XIII).
+  - La consola de inspección es opcional y solo para que una persona observe topics y mensajes.
+    No sustituye la creación manual de topics ni el registro manual de esquemas, ni se usa para
+    automatizarlos. Se fija con versión exacta de imagen, sin `latest`, y no recibe credenciales
+    ni variables de la aplicación.
 - Responsabilidad del agente: declarar las variables en `.env.example` y listar en el
   `README` las variables que nombran los topics (DLQ incluidos) con su rol.
 
@@ -268,7 +273,7 @@ reales que el equipo haya creado.
 
 | Artefacto            | Condiciones                                                                         |
 | -------------------- | ----------------------------------------------------------------------------------- |
-| `docker-compose.yml` | Uno solo, en la raíz, solo para desarrollo local, con PostgreSQL, Redis >= 7.0, Kafka y Schema Registry de Confluent. Sujeto a las reglas del Principio III |
+| `docker-compose.yml` | Uno solo, en la raíz, solo para desarrollo local, con PostgreSQL, Redis >= 7.0, Kafka, Schema Registry de Confluent y, opcionalmente, Redpanda Console. Sujeto a las reglas del Principio III |
 
 **Artefactos y dependencias PROHIBIDOS:** Apicurio y cualquier registry o serde que no sea el
 de Confluent, cualquier `docker-compose` distinto del único permitido por el Principio III,
@@ -326,4 +331,4 @@ que cumpla.
 **Guía en tiempo de desarrollo.** Los specs y planes generados por Spec Kit bajo `specs/` son
 la fuente de alcance; esta constitución es la fuente de restricciones.
 
-**Version**: 1.1.0 | **Ratified**: 2026-11-09 | **Last Amended**: 2026-11-09
+**Version**: 1.2.0 | **Ratified**: 2026-11-09 | **Last Amended**: 2026-11-11

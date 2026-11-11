@@ -71,9 +71,9 @@ JAX-RS por `openapi-generator-maven-plugin`) viven en `target/` y no se versiona
   verificar, se anota y se reporta; nunca se adivina.
 - **No sobreextenderse**: lo que no está en el spec/plan se pregunta. Sin métricas, reintentos,
   outbox, autenticación ni endpoints extra.
-- **Infraestructura la gestiona el equipo**: PROHIBIDO Flyway, docker-compose, Kubernetes,
-  Terraform, scripts de topics, Dev Services activo, Apicurio. Hibernate nunca crea ni valida el
-  esquema (`schema-management.strategy: none`).
+- **Infraestructura la gestiona el equipo**: PROHIBIDO Flyway, docker-compose (salvo el local de
+  la constitución III), Kubernetes, Terraform, scripts de topics, Dev Services activo, Apicurio.
+  Hibernate nunca crea ni valida el esquema (`schema-management.strategy: none`).
 - **Configuración**: `application.yaml`; variables de entorno `${NOMBRE}` **sin default**. Lista
   cerrada de 16 (ver `.env.example`); no añadir ninguna. Ningún secreto, URL ni token literal.
 - **Código en inglés** (clases, métodos, mensajes, tests, comentarios); topics y columnas conservan
@@ -104,8 +104,9 @@ JAX-RS por `openapi-generator-maven-plugin`) viven en `target/` y no se versiona
 
 ## Entorno local
 
-`docker-compose.yml` (solo local, constitución III v1.1.0): PostgreSQL, Redis 7.4, Kafka y Schema
-Registry. Topics, esquemas y `db/schema.sql` los aplica una persona. Pasos en el `README`.
+`docker-compose.yml` (solo local, constitución III v1.2.0): PostgreSQL, Redis 7.4, Kafka, Schema
+Registry y, opcional, Redpanda Console en `http://localhost:8085` (solo inspección). Topics,
+esquemas y `db/schema.sql` los aplica una persona. Pasos en el `README`.
 
 ## Pendiente de verificar
 

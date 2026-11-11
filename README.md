@@ -70,6 +70,10 @@ esquemas y no aplica `db/schema.sql`: una persona hace esos tres pasos.
    el serializer usa la última versión registrada (`use.latest.version`).
 5. `mvn quarkus:dev`. El perfil `dev` usa `PLAINTEXT`; el resto de perfiles usa `SASL_SSL`.
 
+**Opcional:** el compose levanta también Redpanda Console en `http://localhost:8085` para ver
+topics y mensajes Avro decodificados (consumo, publicación, DLQ). Es solo para inspección: no se
+usa para crear topics ni registrar esquemas (constitución III).
+
 ## Ejecutar
 
 ```bash

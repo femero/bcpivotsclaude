@@ -10,3 +10,7 @@ Thumbs.db
 # Office files with personal data and their temp lock files
 docs/Integrantes*.xlsx
 ~$*
+
+# Claude Code: personal configuration
+CLAUDE.local.md
+.claude/settings.local.json
